@@ -1,16 +1,18 @@
-import os
-from setuptools import setup, find_packages
-# import pkg_resources
+from pathlib import Path
 
-# Path to the requirements file
-# requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
+from setuptools import find_packages, setup
 
-# Read the requirements from the requirements file
-# if os.path.exists(requirements_path):
-#    with open(requirements_path, 'r') as f:
-#        install_requires = [str(r) for r in pkg_resources.parse_requirements(f)]
-# else:
-#    install_requires = []
+
+def read_requirements():
+    requirements_path = Path(__file__).with_name("requirements.txt")
+    if not requirements_path.exists():
+        return []
+    return [
+        line.strip()
+        for line in requirements_path.read_text().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
 
 setup(
     name="diffsynth",
@@ -18,8 +20,23 @@ setup(
     description="Enjoy the magic of Diffusion models!",
     author="Artiprocher",
     packages=find_packages(),
-    # install_requires=install_requires,
-    install_requires=[],
+    install_requires=read_requirements(),
+    extras_require={
+        "npu_aarch64": [
+            "torch==2.7.1",
+            "torch-npu==2.7.1",
+            "torchvision==0.22.1",
+        ],
+        "npu": [
+            "torch==2.7.1+cpu",
+            "torch-npu==2.7.1",
+            "torchvision==0.22.1+cpu",
+        ],
+        "audio": [
+            "torchaudio",
+            "torchcodec",
+        ],
+    },
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -27,5 +44,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     package_data={"diffsynth": ["tokenizer_configs/**/**/*.*"]},
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )

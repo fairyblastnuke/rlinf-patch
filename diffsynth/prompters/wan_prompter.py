@@ -1,7 +1,7 @@
 from .base_prompter import BasePrompter
 from ..models.wan_video_text_encoder import WanTextEncoder
 from transformers import AutoTokenizer
-import os, torch
+import torch
 import ftfy
 import html
 import string
@@ -96,8 +96,10 @@ class WanPrompter(BasePrompter):
     def fetch_models(self, text_encoder: WanTextEncoder = None):
         self.text_encoder = text_encoder
 
-    def encode_prompt(self, prompt, positive=True, device="cuda"):
+    def encode_prompt(self, prompt, positive=True, device=None):
         prompt = self.process_prompt(prompt, positive=positive)
+        if device is None:
+            device = next(self.text_encoder.parameters()).device
         
         ids, mask = self.tokenizer(prompt, return_mask=True, add_special_tokens=True)
         ids = ids.to(device)

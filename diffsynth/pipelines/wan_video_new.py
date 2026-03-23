@@ -13,6 +13,7 @@ from typing import Optional
 from typing_extensions import Literal
 from functools import partial
 
+from ..device import get_available_device_type, parse_device_type, parse_nccl_backend
 from ..utils import BasePipeline, ModelConfig, PipelineUnit, PipelineUnitRunner
 from ..models import ModelManager, load_state_dict
 from ..models.wan_video_dit import WanModel, RMSNorm, sinusoidal_embedding_1d
@@ -163,9 +164,9 @@ def plot_l1_distances(collector: L1AnalysisCollector, num_steps: int, save_path=
 
 class WanVideoPipeline(BasePipeline):
 
-    def __init__(self, device="cuda", torch_dtype=torch.bfloat16, tokenizer_path=None, model_type="Wan2.1-T2V-14B"):
+    def __init__(self, device=None, torch_dtype=torch.bfloat16, tokenizer_path=None, model_type="Wan2.1-T2V-14B"):
         super().__init__(
-            device=device, torch_dtype=torch_dtype,
+            device=device or get_available_device_type(), torch_dtype=torch_dtype,
             height_division_factor=16, width_division_factor=16, time_division_factor=4, time_division_remainder=1
         )
         self.model_type = model_type
@@ -503,14 +504,16 @@ class WanVideoPipeline(BasePipeline):
     def initialize_usp(self):
         import torch.distributed as dist
         from xfuser.core.distributed import initialize_model_parallel, init_distributed_environment
-        dist.init_process_group(backend="nccl", init_method="env://")
+        dist.init_process_group(backend=parse_nccl_backend(parse_device_type(self.device)), init_method="env://")
         init_distributed_environment(rank=dist.get_rank(), world_size=dist.get_world_size())
         initialize_model_parallel(
             sequence_parallel_degree=dist.get_world_size(),
             ring_degree=1,
             ulysses_degree=dist.get_world_size(),
         )
-        torch.cuda.set_device(dist.get_rank())
+        torch_device = parse_device_type(self.device)
+        if torch_device != "cpu":
+            getattr(torch, torch_device).set_device(dist.get_rank())
             
             
     def enable_usp(self):
@@ -531,7 +534,7 @@ class WanVideoPipeline(BasePipeline):
     @staticmethod
     def from_pretrained(
         torch_dtype: torch.dtype = torch.bfloat16,
-        device: Union[str, torch.device] = "cuda",
+        device: Union[str, torch.device, None] = None,
         model_configs: list[ModelConfig] = [],
         tokenizer_config: ModelConfig = ModelConfig(model_id="Wan-AI/Wan2.1-T2V-1.3B", origin_file_pattern="google/*"),
         audio_processor_config: ModelConfig = None,
@@ -555,6 +558,7 @@ class WanVideoPipeline(BasePipeline):
                     model_config.model_id = redirect_dict[model_config.origin_file_pattern]
         
         # Initialize pipeline
+        device = get_available_device_type() if device is None else device
         pipe = WanVideoPipeline(device=device, torch_dtype=torch_dtype)
 
         if use_usp: pipe.initialize_usp()
@@ -1464,7 +1468,8 @@ class WanVideoPostUnit_AnimateInpaint(PipelineUnit):
             onload_model_names=("vae",)
         )
         
-    def get_i2v_mask(self, lat_t, lat_h, lat_w, mask_len=1, mask_pixel_values=None, device="cuda"):
+    def get_i2v_mask(self, lat_t, lat_h, lat_w, mask_len=1, mask_pixel_values=None, device=None):
+        device = self.device if device is None else device
         if mask_pixel_values is None:
             msk = torch.zeros(1, (lat_t-1) * 4 + 1, lat_h, lat_w, device=device)
         else:

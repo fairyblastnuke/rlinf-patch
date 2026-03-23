@@ -30,13 +30,19 @@ class WanTrainingModule(DiffusionTrainingModule):
         context_noise_sigma=0.0, # 新增参数
         static_video_prob=0.0, # 新增参数
         use_wow_checkpoint=False, # 新增参数
+        device=None,
     ):
         super().__init__()
         # Load models
         model_configs = self.parse_model_configs(model_paths, model_id_with_origin_paths, enable_fp8_training=False)
         if audio_processor_config is not None:
             audio_processor_config = ModelConfig(model_id=audio_processor_config.split(":")[0], origin_file_pattern=audio_processor_config.split(":")[1])
-        self.pipe = WanVideoPipeline.from_pretrained(torch_dtype=torch.bfloat16, device="cpu", model_configs=model_configs, audio_processor_config=audio_processor_config)
+        self.pipe = WanVideoPipeline.from_pretrained(
+            torch_dtype=torch.bfloat16,
+            device="cpu" if device is None else device,
+            model_configs=model_configs,
+            audio_processor_config=audio_processor_config,
+        )
         
         # --- Patch Start: 加载 WoW 权重 ---
         if use_wow_checkpoint:
@@ -179,6 +185,7 @@ if __name__ == "__main__":
         context_noise_sigma=args.context_noise_sigma, 
         static_video_prob=args.static_video_prob, 
         use_wow_checkpoint=args.use_wow_checkpoint, 
+        device="cpu" if args.initialize_model_on_cpu else None,
     )
     model_logger = ModelLogger(
         args.output_path,

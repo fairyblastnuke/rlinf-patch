@@ -3,13 +3,15 @@ import numpy as np
 from PIL import Image
 from torchvision.transforms import GaussianBlur
 
+from ..device import empty_cache, get_available_device_type, parse_device_type
+
 
 
 class BasePipeline(torch.nn.Module):
 
-    def __init__(self, device="cuda", torch_dtype=torch.float16, height_division_factor=64, width_division_factor=64):
+    def __init__(self, device=None, torch_dtype=torch.float16, height_division_factor=64, width_division_factor=64):
         super().__init__()
-        self.device = device
+        self.device = device or get_available_device_type()
         self.torch_dtype = torch_dtype
         self.height_division_factor = height_division_factor
         self.width_division_factor = width_division_factor
@@ -118,7 +120,7 @@ class BasePipeline(torch.nn.Module):
                 else:
                     model.to(self.device)
         # fresh the cuda cache
-        torch.cuda.empty_cache()
+        empty_cache(parse_device_type(self.device))
 
     
     def generate_noise(self, shape, seed=None, device="cpu", dtype=torch.float16):

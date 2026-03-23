@@ -10,18 +10,20 @@ import numpy as np
 from PIL import Image
 from typing import Optional
 
+from ..device import empty_cache, get_available_device_type, get_mem_info, parse_device_type
+
 
 class BasePipeline(torch.nn.Module):
 
     def __init__(
         self,
-        device="cuda", torch_dtype=torch.float16,
+        device=None, torch_dtype=torch.float16,
         height_division_factor=64, width_division_factor=64,
         time_division_factor=None, time_division_remainder=None,
     ):
         super().__init__()
         # The device and torch_dtype is used for the storage of intermediate variables, not models.
-        self.device = device
+        self.device = device or get_available_device_type()
         self.torch_dtype = torch_dtype
         # The following parameters are used for shape check.
         self.height_division_factor = height_division_factor
@@ -216,7 +218,7 @@ class BasePipeline(torch.nn.Module):
                                 module.offload()
                     else:
                         model.cpu()
-            torch.cuda.empty_cache()
+            empty_cache(parse_device_type(self.device))
             # onload models
             for name, model in self.named_children():
                 if name in model_names:
@@ -242,7 +244,7 @@ class BasePipeline(torch.nn.Module):
         
         
     def get_vram(self):
-        return torch.cuda.mem_get_info(self.device)[1] / (1024 ** 3)
+        return get_mem_info(self.device)[1] / (1024 ** 3)
     
     
     def freeze_except(self, model_names):

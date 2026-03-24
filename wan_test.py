@@ -1,6 +1,6 @@
 import torch
 from PIL import Image
-from diffsynth.utils.data import save_video
+from diffsynth import save_video
 from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 from diffsynth.device import get_device_name
 from modelscope import dataset_snapshot_download

@@ -395,13 +395,13 @@ class WanModel(torch.nn.Module):
         self.require_vae_embedding = require_vae_embedding
         self.require_clip_embedding = require_clip_embedding
         self.fuse_vae_embedding_in_latents = fuse_vae_embedding_in_latents
-        self.TI2V1 = False # action只通过crossattn注入
-        self.TI2V2 = True # action通过crossattn和modulation注入
-        self.TI2V3 = False # action只通过modulation注入
+        self.TI2V1 = TI2V1 # action只通过crossattn注入
+        self.TI2V2 = TI2V2 # action通过crossattn和modulation注入
+        self.TI2V3 = TI2V3 # action只通过modulation注入
         self.TI2V4 = False # action和图像拼接
-        self.I2V = False
-        self.five_frame_condition = True
-        self.one_frame_condition = False
+        self.I2V = I2V
+        self.five_frame_condition = five_frame_condition
+        self.one_frame_condition = one_frame_condition
         print(f"The MODE is TI2V4:{self.TI2V4}")
         print(f"The MODE is TI2V3:{self.TI2V3}")
         print(f"The MODE is TI2V2:{self.TI2V2}")
@@ -426,6 +426,11 @@ class WanModel(torch.nn.Module):
 
         self.patch_embedding = nn.Conv3d(
             in_dim, dim, kernel_size=patch_size, stride=patch_size)
+        self.text_embedding = nn.Sequential(
+            nn.Linear(text_dim, dim),
+            nn.GELU(approximate='tanh'),
+            nn.Linear(dim, dim)
+        )
 
         self.time_embedding = nn.Sequential(
             nn.Linear(freq_dim, dim),

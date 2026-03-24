@@ -1736,9 +1736,16 @@ def model_fn_wan_video(
     # Motion Controller
     if motion_bucket_id is not None and motion_controller is not None:
         t_mod = t_mod + motion_controller(motion_bucket_id).unflatten(1, (6, dit.dim))
+    context = dit.text_embedding(context)
 
     analysis_collector = kwargs.get("analysis_collector", None)
     x = latents
+
+    # Merged cfg
+    if x.shape[0] != context.shape[0]:
+        x = torch.concat([x] * context.shape[0], dim=0)
+    if timestep.shape[0] != context.shape[0]:
+        timestep = torch.concat([timestep] * context.shape[0], dim=0)
 
 
     # Image Embedding

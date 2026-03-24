@@ -1063,7 +1063,7 @@ class WanVideoUnit_FunReference(PipelineUnit):
     def __init__(self):
         super().__init__(
             input_params=("reference_image", "height", "width", "reference_image"),
-            onload_model_names=("vae",)
+            onload_model_names=("vae", "image_encoder")
         )
 
     def process(self, pipe: WanVideoPipeline, reference_image, height, width):

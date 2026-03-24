@@ -97,6 +97,10 @@ class BasePipeline(torch.nn.Module):
     def load_models_to_device(self, loadmodel_names=[]):
         # only load models to device if cpu_offload is enabled
         if not self.cpu_offload:
+            for model_name in loadmodel_names:
+                model = getattr(self, model_name)
+                if model is not None:
+                    model.to(self.device)
             return
         # offload the unneeded models to cpu
         for model_name in self.model_names:

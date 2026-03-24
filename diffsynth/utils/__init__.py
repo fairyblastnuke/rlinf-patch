@@ -228,6 +228,10 @@ class BasePipeline(torch.nn.Module):
                                 module.onload()
                     else:
                         model.to(self.device)
+        else:
+            for name, model in self.named_children():
+                if name in model_names and model is not None:
+                    model.to(self.device)
 
 
     def generate_noise(self, shape, seed=None, rand_device="cpu", rand_torch_dtype=torch.float32, device=None, torch_dtype=None):

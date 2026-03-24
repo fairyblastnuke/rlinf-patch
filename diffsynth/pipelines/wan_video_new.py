@@ -1669,7 +1669,8 @@ def model_fn_wan_video(
     **kwargs,
 ):
 
-    bs_1 = True if len(action.shape) == 2 else False
+    has_action = action is not None
+    bs_1 = True if not has_action or len(action.shape) == 2 else False
 
     if sliding_window_size is not None and sliding_window_stride is not None:
         model_kwargs = dict(
@@ -1751,8 +1752,8 @@ def model_fn_wan_video(
         else:
             context = clip_embdding
 
-    action_raw = action.clone()
-    if dit.I2V or dit.TI2V2 or dit.TI2V1:
+    action_raw = action.clone() if has_action else None
+    if has_action and (dit.I2V or dit.TI2V2 or dit.TI2V1):
         if isinstance(action, np.ndarray):
             action = torch.from_numpy(action)
         action = action.to(dtype=x.dtype, device=x.device)
@@ -1779,7 +1780,7 @@ def model_fn_wan_video(
     x = dit.patchify(x, control_camera_latents_input)
 
 
-    if dit.TI2V2 or dit.TI2V3:
+    if has_action and (dit.TI2V2 or dit.TI2V3):
         if not bs_1:
             action = action_raw
             if isinstance(action, np.ndarray):
@@ -1814,7 +1815,7 @@ def model_fn_wan_video(
         ]).flatten()
         t = dit.time_embedding(sinusoidal_embedding_1d(dit.freq_dim, timestep).unsqueeze(0))
 
-        if dit.TI2V2 or dit.TI2V3:
+        if has_action and (dit.TI2V2 or dit.TI2V3):
             action_emb = action_emb.unsqueeze(0) # [1, T, 3072]
             action_emb = action_emb.unsqueeze(2).repeat(1,1,64,1).flatten(1,2)
             t = t + action_emb
@@ -1832,7 +1833,7 @@ def model_fn_wan_video(
                 torch.ones((latents.shape[2] - 2, latents.shape[3] * latents.shape[4] // 4), dtype=latents.dtype, device=latents.device) * timestep
             ]).flatten()
             t = dit.time_embedding(sinusoidal_embedding_1d(dit.freq_dim, timestep).unsqueeze(0)).repeat(B, 1, 1)
-            if dit.TI2V2 or dit.TI2V3:
+            if has_action and (dit.TI2V2 or dit.TI2V3):
                 action_emb = action_emb.unsqueeze(2).repeat(1,1,64,1).flatten(1,2)
                 t = t + action_emb
             t_mod = dit.time_projection(t).unflatten(2, (6, dit.dim))
@@ -1843,7 +1844,7 @@ def model_fn_wan_video(
             ]).flatten()
             t = dit.time_embedding(sinusoidal_embedding_1d(dit.freq_dim, timestep).unsqueeze(0))
 
-            if dit.TI2V2 or dit.TI2V3:
+            if has_action and (dit.TI2V2 or dit.TI2V3):
                 action_emb = action_emb.unsqueeze(0) # [1, T, 3072]
                 action_emb = action_emb.unsqueeze(2).repeat(1,1,64,1).flatten(1,2)
                 t = t + action_emb

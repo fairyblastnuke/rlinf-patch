@@ -138,6 +138,10 @@ class VideoData:
 
 
 def save_video(frames, save_path, fps, quality=9, ffmpeg_params=None):
+    if len(frames) > 0 and isinstance(frames[0], list):
+        if len(frames) != 1:
+            raise ValueError("save_video expects a single video. Received a batched video output; pass one sample, e.g. video[0].")
+        frames = frames[0]
     writer = imageio.get_writer(save_path, fps=fps, quality=quality, ffmpeg_params=ffmpeg_params)
     for frame in tqdm(frames, desc="Saving video"):
         frame = np.array(frame)
@@ -145,6 +149,10 @@ def save_video(frames, save_path, fps, quality=9, ffmpeg_params=None):
     writer.close()
 
 def save_frames(frames, save_path):
+    if len(frames) > 0 and isinstance(frames[0], list):
+        if len(frames) != 1:
+            raise ValueError("save_frames expects a single video. Received a batched video output; pass one sample, e.g. video[0].")
+        frames = frames[0]
     os.makedirs(save_path, exist_ok=True)
     for i, frame in enumerate(tqdm(frames, desc="Saving images")):
         frame.save(os.path.join(save_path, f"{i}.png"))

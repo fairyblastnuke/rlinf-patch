@@ -1,3 +1,4 @@
+import os
 import torch
 from PIL import Image
 from diffsynth import save_video
@@ -5,18 +6,37 @@ from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 from diffsynth.device import get_device_name
 from modelscope import dataset_snapshot_download
 
+DIFFSYNTH_MODEL_BASE_PATH = os.environ["DIFFSYNTH_MODEL_BASE_PATH"]
+
 
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="npu",
     model_configs=[
-        ModelConfig(model_id="Wan-AI/Wan2.2-TI2V-5B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth"),
-        ModelConfig(model_id="Wan-AI/Wan2.2-TI2V-5B", origin_file_pattern="diffusion_pytorch_model*.safetensors"),
-        ModelConfig(model_id="Wan-AI/Wan2.2-TI2V-5B", origin_file_pattern="Wan2.2_VAE.pth"),
+        ModelConfig(
+            model_id="Wan-AI/Wan2.2-TI2V-5B",
+            origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth",
+            local_model_path=DIFFSYNTH_MODEL_BASE_PATH,
+            skip_download=True,
+        ),
+        ModelConfig(
+            model_id="Wan-AI/Wan2.2-TI2V-5B",
+            origin_file_pattern="diffusion_pytorch_model*.safetensors",
+            local_model_path=DIFFSYNTH_MODEL_BASE_PATH,
+            skip_download=True,
+        ),
+        ModelConfig(
+            model_id="Wan-AI/Wan2.2-TI2V-5B",
+            origin_file_pattern="Wan2.2_VAE.pth",
+            local_model_path=DIFFSYNTH_MODEL_BASE_PATH,
+            skip_download=True,
+        ),
     ],
     tokenizer_config=ModelConfig(
         model_id="Wan-AI/Wan2.1-T2V-1.3B",
         origin_file_pattern="google/umt5-xxl/",
+        local_model_path=DIFFSYNTH_MODEL_BASE_PATH,
+        skip_download=True,
     ),
     redirect_common_files=False,
 )
